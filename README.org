@@ -1,0 +1,9 @@
+* Blockchain realisation on rust
+
+Structure of block: /(2024-03-30)/
++ ~id~
++ ~data~
++ ~curr_hash~
++ ~prev_hash~
++ ~timestamp~
++ ~nonce~
