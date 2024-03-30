@@ -173,6 +173,7 @@ async fn main() {
     pretty_env_logger::init();
 
     // info!("Peer Id: {}", p2p::PEER_ID.clone());
+    print!("{}[2J", 27 as char);
     println!("{}", PEER_ID.clone());
     let (response_sender, mut response_rcv) = mpsc::unbounded_channel();
     let (init_sender, mut init_rcv) = mpsc::unbounded_channel();
@@ -262,9 +263,13 @@ async fn main() {
                         .publish(p2p::CHAIN_TOPIC.clone(), json.as_bytes());
                 }
                 p2p::EventType::Input(line) => match line.as_str() {
-                    "ls p" => p2p::handle_print_peers(&swarm),
-                    cmd if cmd.starts_with("ls c") => p2p::handle_print_chain(&swarm),
-                    cmd if cmd.starts_with("create b") => p2p::handle_create_block(cmd, &mut swarm),
+                    cmd if cmd.starts_with("/help") => p2p::help_message(),
+                    cmd if cmd.starts_with("/list peers") => p2p::handle_print_peers(&swarm),
+                    cmd if cmd.starts_with("/list chain") => p2p::handle_print_chain(&swarm),
+                    cmd if cmd.starts_with("/create block") => {
+                        p2p::handle_create_block(cmd, &mut swarm)
+                    }
+                    cmd if cmd.starts_with("/clear") => p2p::clear_chat(),
                     _ => error!("unknown command"),
                 },
             }

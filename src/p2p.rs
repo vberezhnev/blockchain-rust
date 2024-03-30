@@ -136,7 +136,7 @@ pub fn handle_print_chain(swarm: &Swarm<AppBehaviour>) {
     println!("Local Blockchain:");
     let pretty_json =
         serde_json::to_string_pretty(&swarm.behaviour().app.blocks).expect("can't jsonify blocks");
-    println!("{:#?}", pretty_json);
+    println!("{:}", pretty_json);
 }
 
 pub fn handle_create_block(cmd: &str, swarm: &mut Swarm<AppBehaviour>) {
@@ -160,4 +160,13 @@ pub fn handle_create_block(cmd: &str, swarm: &mut Swarm<AppBehaviour>) {
             .floodsub
             .publish(BLOCK_TOPIC.clone(), json.as_bytes());
     }
+}
+
+pub fn help_message() {
+    println!("/help \n/list peers \n/list chain \n/create block \n/clear\n")
+}
+
+pub fn clear_chat() {
+    println!("\x1B[2J");
+    println!("{}[2J", 27 as char);
 }
