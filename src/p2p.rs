@@ -1,4 +1,6 @@
-use super::{App, Block};
+use super::App;
+use crate::model::Block;
+
 use libp2p::{
     floodsub::{Floodsub, FloodsubEvent, Topic},
     identity,
@@ -74,13 +76,13 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for AppBehaviour {
         if let FloodsubEvent::Message(msg) = event {
             if let Ok(resp) = serde_json::from_slice::<ChainResponse>(&msg.data) {
                 if resp.receiver == PEER_ID.to_string() {
-                    println!("Response from {}:", msg.source);
-                    resp.blocks.iter().for_each(|r| println!("{:#?}", r));
+                    info!("Response from {}:", msg.source);
+                    resp.blocks.iter().for_each(|r| info!("{:#?}", r));
 
                     self.app.blocks = self.app.choose_chain(self.app.blocks.clone(), resp.blocks);
                 }
             } else if let Ok(resp) = serde_json::from_slice::<LocalChainRequest>(&msg.data) {
-                println!("sending local chain to {}", msg.source.to_string());
+                info!("sending local chain to {}", msg.source.to_string());
                 let peer_id = resp.from_peer_id;
                 if PEER_ID.to_string() == peer_id {
                     if let Err(e) = self.response_sender.send(ChainResponse {
@@ -91,7 +93,7 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for AppBehaviour {
                     }
                 }
             } else if let Ok(block) = serde_json::from_slice::<Block>(&msg.data) {
-                println!("received new block from {}", msg.source.to_string());
+                info!("received new block from {}", msg.source.to_string());
                 self.app.add_block(block);
             }
         }
@@ -118,7 +120,7 @@ impl NetworkBehaviourEventProcess<MdnsEvent> for AppBehaviour {
 }
 
 pub fn get_list_peers(swarm: &Swarm<AppBehaviour>) -> Vec<String> {
-    println!("Discovered Peers:");
+    info!("Discovered Peers:");
     let nodes = swarm.behaviour().mdns.discovered_nodes();
     let mut unique_peers = HashSet::new();
     for peer in nodes {
@@ -129,14 +131,14 @@ pub fn get_list_peers(swarm: &Swarm<AppBehaviour>) -> Vec<String> {
 
 pub fn handle_print_peers(swarm: &Swarm<AppBehaviour>) {
     let peers = get_list_peers(swarm);
-    peers.iter().for_each(|p| println!("{}", p));
+    peers.iter().for_each(|p| info!("{}", p));
 }
 
 pub fn handle_print_chain(swarm: &Swarm<AppBehaviour>) {
-    println!("Local Blockchain:");
+    info!("Local Blockchain:");
     let pretty_json =
         serde_json::to_string_pretty(&swarm.behaviour().app.blocks).expect("can't jsonify blocks");
-    println!("{:}", pretty_json);
+    info!("{:}", pretty_json);
 }
 
 pub fn handle_create_block(cmd: &str, swarm: &mut Swarm<AppBehaviour>) {
@@ -155,7 +157,7 @@ pub fn handle_create_block(cmd: &str, swarm: &mut Swarm<AppBehaviour>) {
         // let block = Block::new(latest_block.id + 1, latest_block.hash.clone(), data.to_owned(), /* std::string::String */, /* u64 */);
         let json = serde_json::to_string(&block).expect("can jsonify request");
         behaviour.app.blocks.push(block);
-        println!("broadcasting new block");
+        info!("broadcasting new block");
         behaviour
             .floodsub
             .publish(BLOCK_TOPIC.clone(), json.as_bytes());
@@ -163,10 +165,10 @@ pub fn handle_create_block(cmd: &str, swarm: &mut Swarm<AppBehaviour>) {
 }
 
 pub fn help_message() {
-    println!("/help \n/list peers \n/list chain \n/create block \n/clear\n")
+    info!("/help \n/list peers \n/list chain \n/create block \n/clear\n")
 }
 
 pub fn clear_chat() {
-    println!("\x1B[2J");
-    println!("{}[2J", 27 as char);
+    info!("\x1B[2J");
+    info!("{}[2J", 27 as char);
 }

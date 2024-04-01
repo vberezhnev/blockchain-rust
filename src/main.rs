@@ -1,12 +1,10 @@
-mod blockchain;
+mod model;
 mod p2p;
 
-use crate::blockchain::{
-    calculate_hash, hash_to_binary_representation, mine_block, DIFFICULTY_PREFIX,
-};
 use crate::p2p::{AppBehaviour, EventType::Input, EventType::LocalChainResponse, KEYS, PEER_ID};
-use chrono::prelude::*;
+use model::{calculate_hash, hash_to_binary_representation, Block, DIFFICULTY_PREFIX};
 
+use chrono::prelude::*;
 use libp2p::{
     core::upgrade,
     futures::StreamExt,
@@ -26,39 +24,6 @@ use tokio::{
     sync::mpsc,
     time::sleep,
 };
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Block {
-    id: u64,
-    data: String,
-    curr_hash: String,
-    prev_hash: String,
-    timestamp: i64,
-    // signature: u64,
-    nonce: u64,
-}
-
-impl Block {
-    pub fn new(
-        id: u64,
-        data: String,
-        // curr_hash: String,
-        prev_hash: String,
-        // signature: u64,
-    ) -> Self {
-        let now = Utc::now();
-        let (nonce, curr_hash) = mine_block(id, now.timestamp(), &prev_hash, &data);
-        Self {
-            id,
-            data,
-            curr_hash,
-            prev_hash,
-            timestamp: now.timestamp(),
-            // signature,
-            nonce,
-        }
-    }
-}
 
 pub struct App {
     pub blocks: Vec<Block>,
@@ -172,7 +137,6 @@ impl App {
 async fn main() {
     pretty_env_logger::init();
 
-    // info!("Peer Id: {}", p2p::PEER_ID.clone());
     print!("{}[2J", 27 as char);
     println!("{}", PEER_ID.clone());
     let (response_sender, mut response_rcv) = mpsc::unbounded_channel();
@@ -208,7 +172,6 @@ async fn main() {
 
     spawn(async move {
         sleep(Duration::from_secs(1)).await;
-        // info!("sending init event");
         println!("sending init event");
         init_sender.send(true).expect("can send init event");
     });
@@ -224,8 +187,7 @@ async fn main() {
                     Some(p2p::EventType::Init)
                 }
                 event = swarm.select_next_some() => {
-                    // info!("Unhandled Swarm Event: {:?}", event);
-            println!("Unhandled Swarm Event: {:#?}", event);
+                    // println!("Unhandled Swarm Event: {:#?}", event);
                     None
                 },
             }
@@ -237,8 +199,7 @@ async fn main() {
                     let peers = p2p::get_list_peers(&swarm);
                     swarm.behaviour_mut().app.genesis();
 
-                    // info!("connected nodes: {}", peers.len());
-                    println!("connected nodes: {}", peers.len());
+                    println!("Connected nodes: {}", peers.len());
                     if !peers.is_empty() {
                         let req = p2p::LocalChainRequest {
                             from_peer_id: peers
@@ -266,9 +227,7 @@ async fn main() {
                     cmd if cmd.starts_with("/help") => p2p::help_message(),
                     cmd if cmd.starts_with("/list peers") => p2p::handle_print_peers(&swarm),
                     cmd if cmd.starts_with("/list chain") => p2p::handle_print_chain(&swarm),
-                    cmd if cmd.starts_with("/create block") => {
-                        p2p::handle_create_block(cmd, &mut swarm)
-                    }
+                    cmd if cmd.starts_with("create b") => p2p::handle_create_block(cmd, &mut swarm),
                     cmd if cmd.starts_with("/clear") => p2p::clear_chat(),
                     _ => error!("unknown command"),
                 },
