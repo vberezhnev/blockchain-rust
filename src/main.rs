@@ -42,9 +42,9 @@ impl App {
             curr_hash: String::from(
                 "433855b7d2b96c23a6f60e70c655eb4305e8806b682a9596a200642f947259b1",
             ),
-            prev_hash: String::from("genesis block"),
+            prev_hash: String::from("0"),
             // signature: 123,
-            data: String::from("genesis block"),
+            data: String::from("0"),
             nonce: 1234,
         };
 

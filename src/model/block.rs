@@ -1,5 +1,6 @@
-use super::blockchain::mine_block;
+use crate::{calculate_hash, hash_to_binary_representation, DIFFICULTY_PREFIX};
 use chrono::prelude::*;
+use log::info;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -22,7 +23,7 @@ impl Block {
         // signature: u64,
     ) -> Self {
         let now = Utc::now();
-        let (nonce, curr_hash) = mine_block(id, now.timestamp(), &prev_hash, &data);
+        let (nonce, curr_hash) = Self::mine_block(id, now.timestamp(), &prev_hash, &data);
         Self {
             id,
             data,
@@ -31,6 +32,29 @@ impl Block {
             timestamp: now.timestamp(),
             // signature,
             nonce,
+        }
+    }
+
+    pub fn mine_block(id: u64, timestamp: i64, previous_hash: &str, data: &str) -> (u64, String) {
+        println!("Mining block...");
+        let mut nonce = 0;
+
+        loop {
+            if nonce % 100000 == 0 {
+                info!("nonce: {}", nonce);
+            }
+            let hash = calculate_hash(id, timestamp, previous_hash, data, nonce);
+            let binary_hash = hash_to_binary_representation(&hash);
+            if binary_hash.starts_with(DIFFICULTY_PREFIX) {
+                println!(
+                    "mined! nonce: {}, hash: {}, binary hash: {}",
+                    nonce,
+                    hex::encode(&hash),
+                    binary_hash
+                );
+                return (nonce, hex::encode(hash));
+            }
+            nonce += 1;
         }
     }
 }

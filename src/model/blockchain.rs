@@ -27,26 +27,3 @@ pub fn hash_to_binary_representation(hash: &[u8]) -> String {
 
     res
 }
-
-pub fn mine_block(id: u64, timestamp: i64, previous_hash: &str, data: &str) -> (u64, String) {
-    println!("Mining block...");
-    let mut nonce = 0;
-
-    loop {
-        if nonce % 100000 == 0 {
-            info!("nonce: {}", nonce);
-        }
-        let hash = calculate_hash(id, timestamp, previous_hash, data, nonce);
-        let binary_hash = hash_to_binary_representation(&hash);
-        if binary_hash.starts_with(DIFFICULTY_PREFIX) {
-            println!(
-                "mined! nonce: {}, hash: {}, binary hash: {}",
-                nonce,
-                hex::encode(&hash),
-                binary_hash
-            );
-            return (nonce, hex::encode(hash));
-        }
-        nonce += 1;
-    }
-}
