@@ -4,6 +4,16 @@ use log::info;
 use rsa::RsaPrivateKey;
 use serde::{Deserialize, Serialize};
 
+pub const RAND_BYTES: i32 = 32;
+pub const START_PERCENT: i32 = 10;
+pub const STORAGE_REWARD: i32 = 1; // coin
+
+// FIXME: Resolve conflict with Blockchain structure from... We didn't have blockchain structure before?
+pub struct BlockChain {
+    // database: ,
+    index: u64
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
     pub id: u64,
@@ -29,6 +39,29 @@ pub struct Transaction {
 pub struct User {
     private_key: RsaPrivateKey,
 }
+
+// TODO: Present it as implementation of Transaction structure
+pub fn new_transaction(user: User, last_hash: String, to: String, value: u64) -> Transaction {
+    let tx = Transaction {
+        rand_bytes: generate_random_bytes(RAND_BYTES),
+        prev_block: last_hash,
+        sender: user.Address(),
+        receiver: to,
+        value: value,
+    };
+
+    if value > START_PERCENT {
+        tx.to_storage = STORAGE_REWARD
+    }
+
+    tx.curr_hash = tx.hash(); // FIXME: .hash() is invalid function
+    tx.signature = tx.sign(user.Private()); // FIXME: .Private() is invalid function
+    tx
+}
+
+pub fn add_transaction(chain: )
+
+/* ------------------------- */
 
 impl Block {
     pub fn new(
