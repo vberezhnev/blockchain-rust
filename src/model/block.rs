@@ -1,6 +1,7 @@
 use crate::{calculate_hash, hash_to_binary_representation, DIFFICULTY_PREFIX};
 use chrono::prelude::*;
 use log::info;
+use rsa::RsaPrivateKey;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -10,8 +11,23 @@ pub struct Block {
     pub curr_hash: String,
     pub prev_hash: String,
     pub timestamp: i64,
-    // signature: u64,
+    pub transaction: Vec<Transaction>,
     pub nonce: u64,
+}
+
+pub struct Transaction {
+    rand_bytes: i32,
+    prev_block: i32,
+    sender: String,
+    receiver: String,
+    value: u64,
+    to_storage: u64,
+    curr_hash: i32,
+    signature: u64,
+}
+
+pub struct User {
+    private_key: RsaPrivateKey,
 }
 
 impl Block {
