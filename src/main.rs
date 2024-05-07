@@ -10,9 +10,9 @@ use libp2p::{
     futures::StreamExt,
     mplex,
     noise::{Keypair, NoiseConfig, X25519Spec},
-    swarm::{Swarm, SwarmBuilder},
+    swarm::Swarm,
     tcp::Config,
-    Transport,
+    SwarmBuilder, Transport,
 };
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
