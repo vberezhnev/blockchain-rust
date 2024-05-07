@@ -3,11 +3,11 @@ use crate::model::Block;
 
 use libp2p::{
     floodsub::{Floodsub, FloodsubEvent, Topic},
-    identity,
-    mdns::{Mdns, MdnsEvent},
-    swarm::{NetworkBehaviourEventProcess, Swarm},
-    NetworkBehaviour, PeerId,
+    identity, mdns,
+    swarm::Swarm,
+    PeerId,
 };
+use libp2p_swarm_derive::NetworkBehaviour;
 use log::{error, info};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -36,10 +36,31 @@ pub enum EventType {
     Init,
 }
 
+pub enum Event {
+    ChainResponse(ChainResponse),
+    Floodsub(FloodsubEvent),
+    Mdns(mdns::Event),
+    Input(String),
+    Init,
+}
+
+impl From<FloodsubEvent> for Event {
+    fn from(event: FloodsubEvent) -> Self {
+        Self::Floodsub(event)
+    }
+}
+
+impl From<mdns::Event> for Event {
+    fn from(event: mdns::Event) -> Self {
+        Self::Mdns(event)
+    }
+}
+
 #[derive(NetworkBehaviour)]
+#[behaviour(out_event = "Event")]
 pub struct AppBehaviour {
     pub floodsub: Floodsub,
-    pub mdns: Mdns,
+    pub mdns: mdns,
     #[behaviour(ignore)]
     pub response_sender: mpsc::UnboundedSender<ChainResponse>,
     #[behaviour(ignore)]
@@ -55,13 +76,13 @@ impl AppBehaviour {
         init_sender: mpsc::UnboundedSender<bool>,
     ) -> Self {
         let mut behaviour = Self {
-            app,
             floodsub: Floodsub::new(*PEER_ID),
-            mdns: Mdns::new(Default::default())
+            mdns: mdns::Behaviour::new(Default::default(), Default::default()) // Builds a new Mdns behaviour
                 .await
                 .expect("can create mdns"),
             response_sender,
             init_sender,
+            app,
         };
         behaviour.floodsub.subscribe(CHAIN_TOPIC.clone());
         behaviour.floodsub.subscribe(BLOCK_TOPIC.clone());
@@ -100,15 +121,15 @@ impl NetworkBehaviourEventProcess<FloodsubEvent> for AppBehaviour {
     }
 }
 
-impl NetworkBehaviourEventProcess<MdnsEvent> for AppBehaviour {
-    fn inject_event(&mut self, event: MdnsEvent) {
+impl NetworkBehaviourEventProcess<Event> for AppBehaviour {
+    fn inject_event(&mut self, event: Event) {
         match event {
-            MdnsEvent::Discovered(discovered_list) => {
+            Event::Discovered(discovered_list) => {
                 for (peer, _addr) in discovered_list {
                     self.floodsub.add_node_to_partial_view(peer);
                 }
             }
-            MdnsEvent::Expired(expired_list) => {
+            Event::Expired(expired_list) => {
                 for (peer, _addr) in expired_list {
                     if !self.mdns.has_node(&peer) {
                         self.floodsub.remove_node_from_partial_view(&peer);
@@ -149,7 +170,7 @@ pub fn handle_create_block(cmd: &str, swarm: &mut Swarm<AppBehaviour>) {
             .blocks
             .last()
             .expect("there is at least one block");
-        let block = Block::new(
+        let block = Block::new_block(
             latest_block.id + 1,
             data.to_owned(),
             latest_block.curr_hash.clone(),
