@@ -1,4 +1,4 @@
-use libp2p::{tcp::TokioTcpConfig, Transport};
+use libp2p::Transport;
 use log::info;
 use sha2::{Digest, Sha256};
 

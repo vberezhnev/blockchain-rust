@@ -11,7 +11,7 @@ use libp2p::{
     mplex,
     noise::{Keypair, NoiseConfig, X25519Spec},
     swarm::{Swarm, SwarmBuilder},
-    tcp::TokioTcpConfig,
+    tcp::Config,
     Transport,
 };
 use log::{error, info, warn};
@@ -146,7 +146,7 @@ async fn main() {
         .into_authentic(&KEYS)
         .expect("can create auth keys");
 
-    let transp = TokioTcpConfig::new()
+    let transp = Config::new()
         .upgrade(upgrade::Version::V1)
         .authenticate(NoiseConfig::xx(auth_keys).into_authenticated())
         .multiplex(mplex::MplexConfig::new())
