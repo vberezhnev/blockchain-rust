@@ -78,7 +78,7 @@ impl App {
             // block.signature,
         )) != block.curr_hash
         {
-            // TODO: Here can be an error. Check it out
+            // TODO: Here can be an error. Check this out
             warn!("Block with id: {} has invalid hash", block.id);
             return false;
         }
