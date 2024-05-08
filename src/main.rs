@@ -5,15 +5,10 @@ use crate::p2p::{AppBehaviour, EventType::Input, EventType::LocalChainResponse, 
 use model::{calculate_hash, hash_to_binary_representation, Block, DIFFICULTY_PREFIX};
 
 use libp2p::{
-    core::upgrade,
-    futures::StreamExt,
-    // noise::{Keypair, NoiseConfig, X25519Spec},
-    swarm::Swarm,
-    tcp::Config,
-    SwarmBuilder,
+    core::upgrade, futures::StreamExt, identity::Keypair, swarm::Swarm, tcp::Config, SwarmBuilder,
     Transport,
 };
-use libp2p_identity::{KeyType::Ed25519, Keypair};
+// use libp2p_identity::{KeyType::Ed25519, Keypair};
 use libp2p_mplex::MplexConfig;
 use libp2p_noise::Config as NoiseConfig;
 
