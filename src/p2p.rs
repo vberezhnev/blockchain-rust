@@ -3,9 +3,11 @@ use crate::model::Block;
 
 use libp2p::{
     floodsub::{Floodsub, FloodsubEvent, Topic},
-    identity, mdns,
-    swarm::Swarm,
+    identity,
+    mdns::{tokio::Behaviour as TokioType, Behaviour as MdnsBehaviour},
+    swarm::{NetworkBehaviour, Swarm},
     PeerId,
+    //swarm::derive_prelude::NetworkBehaviour
 };
 use libp2p_swarm_derive::NetworkBehaviour;
 use log::{error, info};
@@ -39,7 +41,7 @@ pub enum EventType {
 pub enum Event {
     ChainResponse(ChainResponse),
     Floodsub(FloodsubEvent),
-    Mdns(mdns::Event),
+    Mdns(Event),
     Input(String),
     Init,
 }
@@ -50,8 +52,8 @@ impl From<FloodsubEvent> for Event {
     }
 }
 
-impl From<mdns::Event> for Event {
-    fn from(event: mdns::Event) -> Self {
+impl From<Event> for Event {
+    fn from(event: Event) -> Self {
         Self::Mdns(event)
     }
 }
@@ -60,7 +62,7 @@ impl From<mdns::Event> for Event {
 #[behaviour(out_event = "Event")]
 pub struct AppBehaviour {
     pub floodsub: Floodsub,
-    pub mdns: mdns,
+    pub mdns: MdnsBehaviour<TokioType>,
     #[behaviour(ignore)]
     pub response_sender: mpsc::UnboundedSender<ChainResponse>,
     #[behaviour(ignore)]
@@ -77,7 +79,7 @@ impl AppBehaviour {
     ) -> Self {
         let mut behaviour = Self {
             floodsub: Floodsub::new(*PEER_ID),
-            mdns: mdns::Behaviour::new(Default::default(), Default::default()) // Builds a new Mdns behaviour
+            mdns: MdnsBehaviour::new(Default::default(), Default::default()) // Builds a new Mdns behaviour
                 .await
                 .expect("can create mdns"),
             response_sender,
