@@ -4,19 +4,23 @@ mod p2p;
 use crate::p2p::{AppBehaviour, EventType::Input, EventType::LocalChainResponse, KEYS, PEER_ID};
 use model::{calculate_hash, hash_to_binary_representation, Block, DIFFICULTY_PREFIX};
 
-use chrono::prelude::*;
 use libp2p::{
     core::upgrade,
     futures::StreamExt,
-    mplex,
-    noise::{Keypair, NoiseConfig, X25519Spec},
+    // noise::{Keypair, NoiseConfig, X25519Spec},
     swarm::Swarm,
     tcp::Config,
-    SwarmBuilder, Transport,
+    SwarmBuilder,
+    Transport,
 };
+use libp2p_identity::{KeyType::Ed25519, Keypair};
+use libp2p_mplex::MplexConfig;
+use libp2p_noise::Config as NoiseConfig;
+
+use chrono::prelude::*;
 use log::{error, info, warn};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+// use serde::{Deserialize, Serialize};
+use sha2::{Digest /*, Sha256 */};
 use std::time::Duration;
 use tokio::{
     io::{stdin, AsyncBufReadExt, BufReader},
@@ -38,13 +42,13 @@ impl App {
         // TODO: Should I move this genesis method to separated file?
         let genesis_block = Block {
             id: 0,
-            timestamp: Utc::now().timestamp(),
+            data: String::from("0"),
             curr_hash: String::from(
                 "433855b7d2b96c23a6f60e70c655eb4305e8806b682a9596a200642f947259b1",
             ),
             prev_hash: String::from("0"),
-            // signature: 123,
-            data: String::from("0"),
+            timestamp: Utc::now().timestamp(),
+            transaction: Default::default(),
             nonce: 1234,
         };
 
@@ -142,14 +146,14 @@ async fn main() {
     let (response_sender, mut response_rcv) = mpsc::unbounded_channel();
     let (init_sender, mut init_rcv) = mpsc::unbounded_channel();
 
-    let auth_keys = Keypair::<X25519Spec>::new()
+    let auth_keys = Keypair::generate_ed25519() // changed
         .into_authentic(&KEYS)
         .expect("can create auth keys");
 
     let transp = Config::new()
         .upgrade(upgrade::Version::V1)
         .authenticate(NoiseConfig::xx(auth_keys).into_authenticated())
-        .multiplex(mplex::MplexConfig::new())
+        .multiplex(MplexConfig::new())
         .boxed();
 
     let behaviour = AppBehaviour::new(App::new(), response_sender, init_sender.clone()).await;
